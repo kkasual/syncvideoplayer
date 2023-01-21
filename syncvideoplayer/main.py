@@ -35,12 +35,14 @@ ANCHOR_OVERLAY = 1
 EDGE_ANCHOR_DELTA = 30
 
 ABOUT_TEXT = r"""
-<center><b>Sync Player</b></center>
+<center><b>Sync Video Player</b></center>
 <center>(c) 2023, Roman Arsenikhin</center>
+<br />
+<center>Video player that can play two videos side-by-side</center>
 <br /><br />
 <center>The software is licensed under GPL v3.</center>
 <br />
-Built using the following open-source projects:
+Built using the following libraries and frameworks:
 <ul>
 <li>libmpv (https://mpv.io/)</li>
 <li>python-mpv (https://github.com/jaseg/python-mpv)</li>
@@ -174,7 +176,7 @@ class AppWindow(QMainWindow):
 
     def __init__(self, parent: PySide6.QtWidgets.QWidget = None):
         super().__init__(parent)
-        self.setWindowTitle('Sync Player')
+        self.setWindowTitle('Sync Video Player')
         self.resize(888, 1000)
 
         self.__fixings_invalid = True
