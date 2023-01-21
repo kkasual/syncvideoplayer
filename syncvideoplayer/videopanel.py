@@ -17,9 +17,9 @@ from PySide6.QtCore import Qt, Signal
 from PySide6.QtWidgets import QWidget, QGridLayout, QVBoxLayout, QSlider, QSizePolicy, QLineEdit, QPushButton, \
     QSpacerItem
 
-from syncplayer.utils import ms_to_str
-from syncplayer.videowidget import VideoWidget
-from syncplayer.widgets import HLayoutWidget, VLayoutWidget
+from syncvideoplayer.utils import ms_to_str
+from syncvideoplayer.videowidget import VideoWidget
+from syncvideoplayer.widgets import HLayoutWidget, VLayoutWidget
 
 
 class OffsetSlider(QSlider):

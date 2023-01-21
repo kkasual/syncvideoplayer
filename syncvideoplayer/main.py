@@ -22,9 +22,9 @@ from PySide6.QtCore import Qt, Signal
 from PySide6.QtWidgets import QMainWindow, QApplication, QWidget, QVBoxLayout, QFileDialog, QPushButton, QSlider, \
     QLabel, QMessageBox
 
-from syncplayer.utils import ms_to_str_full, ms_to_str
-from syncplayer.videopanel import VideoPanel
-from syncplayer.widgets import HLayoutWidget, VLayoutWidget
+from syncvideoplayer.utils import ms_to_str_full, ms_to_str
+from syncvideoplayer.videopanel import VideoPanel
+from syncvideoplayer.widgets import HLayoutWidget, VLayoutWidget
 
 logger = logging.getLogger(__name__)
 

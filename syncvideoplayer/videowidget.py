@@ -65,10 +65,10 @@ class VideoWidget(QWidget):
 
     def __make_socket_client(self, ipc_name: str):
         if sys.platform == "win32":
-            from syncplayer.winpipe import WinPipeClient
+            from syncvideoplayer.winpipe import WinPipeClient
             return WinPipeClient(ipc_name)
         else:
-            from syncplayer.unixsocket import UnixSocket
+            from syncvideoplayer.unixsocket import UnixSocket
             return UnixSocket(ipc_name)
 
     def _init_player(self):
