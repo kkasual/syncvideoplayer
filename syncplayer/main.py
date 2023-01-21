@@ -50,10 +50,13 @@ Built using the following open-source projects (thanks guys!):
 """
 
 class PlayerControl(VLayoutWidget):
+    SPEED_VALUES = [25, 50, 75, 100, 125]
+
     play_clicked = Signal()
     seek = Signal(int)
     anchor_clicked = Signal(bool)
     about_clicked = Signal()
+    speed_changed = Signal(float)
 
     def __init__(self):
         super().__init__()
@@ -74,6 +77,13 @@ class PlayerControl(VLayoutWidget):
         self._w_line1.add_widget(self._w_label_pos)
 
         # advanced controls
+        self._w_speed = QSlider(Qt.Orientation.Horizontal)
+        self._w_speed.setTickPosition(QSlider.TickPosition.TicksAbove)
+        self._w_speed.setTickInterval(1)
+        self._w_speed.setRange(0, len(self.SPEED_VALUES)-1)
+        self._w_speed.setPageStep(1)
+        self._w_speed_label = QLabel()
+
         self._w_btn_set_a = QPushButton('A ⇥')
         self._w_btn_set_a.setCheckable(True)
         self._w_btn_set_b = QPushButton('⇤ B')
@@ -83,6 +93,8 @@ class PlayerControl(VLayoutWidget):
         self._w_btn_about = QPushButton('About')
 
         self._w_line2.add_widget(self._w_btn_set_anchor)
+        self._w_line2.add_widget(self._w_speed)
+        self._w_line2.add_widget(self._w_speed_label)
         self._w_line2.add_spacer()
         self._w_line2.add_widget(self._w_btn_set_a)
         self._w_line2.add_widget(self._w_btn_set_b)
@@ -95,8 +107,12 @@ class PlayerControl(VLayoutWidget):
         self._w_position.valueChanged.connect(self.__on_slider_moved)
         self._w_btn_set_anchor.clicked.connect(self.__on_anchor_clicked)
         self._w_btn_about.clicked.connect(self.about_clicked)
+        self._w_speed.valueChanged.connect(self.__on_speed_changed)
 
         self.__update_label()
+        for idx, val in enumerate(self.SPEED_VALUES):
+            if val == 100:
+                self._w_speed.setValue(idx)
 
     def set_length(self, length_ms: int):
         self._w_position.setRange(0, length_ms)
@@ -121,6 +137,12 @@ class PlayerControl(VLayoutWidget):
 
     def __on_anchor_clicked(self):
         self.anchor_clicked.emit(self._w_btn_set_anchor.isChecked())
+
+    def __on_speed_changed(self, value):
+        speed = self.SPEED_VALUES[value]
+        self._w_speed_label.setText('%d%%' % speed)
+        self.speed_changed.emit(speed/100.0)
+
 
 @dataclass
 class VideoRecord:
@@ -169,6 +191,7 @@ class AppWindow(QMainWindow):
 
         self._w_player_control.play_clicked.connect(self.__on_play_clicked)
         self._w_player_control.seek.connect(self.__on_seek)
+        self._w_player_control.speed_changed.connect(self.__on_speed_changed)
         self._w_player_control.anchor_clicked.connect(self.__on_anchor)
         self._w_player_control.about_clicked.connect(self.__on_about)
 
@@ -305,6 +328,10 @@ class AppWindow(QMainWindow):
 
     def __on_about(self):
         QMessageBox.about(self, 'About', ABOUT_TEXT)
+
+    def __on_speed_changed(self, speed: float):
+        for vr in self._records:
+            vr.panel.set_speed(speed)
 
 
 if __name__ == '__main__':

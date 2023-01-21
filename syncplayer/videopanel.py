@@ -172,3 +172,6 @@ class VideoPanel(QWidget):
 
     def clear_text_osd(self, *args, **kwargs):
         self._w_video.clear_text_osd(*args, **kwargs)
+
+    def set_speed(self, *args, **kwargs):
+        self._w_video.set_speed(*args, **kwargs)
