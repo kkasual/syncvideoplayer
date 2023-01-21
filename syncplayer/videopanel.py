@@ -3,8 +3,7 @@
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
+# the Free Software Foundation, version 3 of the License.
 #
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -41,7 +40,8 @@ class OffsetDisplay(QLineEdit):
         super().__init__()
         self.setEnabled(False)
         self.setSizePolicy(QSizePolicy.Minimum, QSizePolicy.Minimum)
-        self.setMaximumWidth(50)
+        self.setAlignment(Qt.AlignmentFlag.AlignRight)
+        self.setMaximumWidth(100)
         self._sign_always = sign_always
         self.set_value(0)
 
@@ -76,7 +76,6 @@ class VideoPanelControl(HLayoutWidget):
 
         self.add_widget(self._w_button_open_video)
 
-        self.add_widget(self._w_start_label)
         self.add_widget(self._w_button_dec_ofs_l)
         self.add_widget(self._w_button_dec_ofs_m)
         self.add_widget(self._w_button_dec_ofs_s)
@@ -84,6 +83,7 @@ class VideoPanelControl(HLayoutWidget):
         self.add_widget(self._w_button_inc_ofs_s)
         self.add_widget(self._w_button_inc_ofs_m)
         self.add_widget(self._w_button_inc_ofs_l)
+        self.add_widget(self._w_start_label)
 
         self._w_button_open_video.clicked.connect(self.clicked_open_video)
         self._w_start_editor.valueChanged.connect(self.seek)
@@ -106,6 +106,7 @@ class VideoPanelControl(HLayoutWidget):
     def update_position(self, time_ms: int):
         self._w_start_editor.blockSignals(True)
         self._w_start_editor.setValue(time_ms)
+        self._w_start_label.set_value(time_ms)
         self._w_start_editor.blockSignals(False)
 
 
