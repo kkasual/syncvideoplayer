@@ -29,12 +29,12 @@ from syncplayer.widgets import HLayoutWidget, VLayoutWidget
 logger = logging.getLogger(__name__)
 
 
-ANCHOR_OVERLAY=1
+ANCHOR_OVERLAY = 1
 
 # more or less one frame
-EDGE_ANCHOR_DELTA=30
+EDGE_ANCHOR_DELTA = 30
 
-ABOUT_TEXT=r"""
+ABOUT_TEXT = r"""
 <center><b>Sync Player</b></center>
 <center>(c) 2023, Roman Arsenikhin</center>
 <br /><br />
@@ -144,7 +144,6 @@ class AppWindow(QMainWindow):
         self.__fixings_invalid = True
 
         self._main_panel_layout = QVBoxLayout()
-        #self._main_panel_layout.setContentsMargins(0, 0, 0, 0)
 
         self._w_main_panel = QWidget()
         self._w_main_panel.setLayout(self._main_panel_layout)
@@ -176,9 +175,9 @@ class AppWindow(QMainWindow):
         self.__update_control_status()
 
     def __update_range(self):
-        max_length = min([panel.duration or 0 for panel in self._records])
-        logger.debug('Current max length: %dms' % max_length)
-        self._w_player_control.set_length(max_length)
+        min_length = min([panel.duration or 0 for panel in self._records])
+        logger.debug('Current min length: %dms' % min_length)
+        self._w_player_control.set_length(min_length)
 
     def __update_control_status(self):
         all_videos_loaded = all([x.panel.has_video() for x in self._records])
@@ -232,7 +231,8 @@ class AppWindow(QMainWindow):
     def __fn_click_open_video(self, panel: VideoPanel):
         def fn():
             self.__stop_playback()
-            fname, _ = QFileDialog.getOpenFileName(None, 'Open video', None, "Videos (*.mp4 *.avi *.lrv);;All files (*.*)")
+            fname, _ = QFileDialog.getOpenFileName(None, 'Open video', None,
+                                                   "Videos (*.mp4 *.mkv *.avi *.lrv *.MP4 *.AVI *.LRV *.MKV);;All files (*.*)")
             if fname:
                 panel.set_video(fname)
                 self.__update_control_status()
@@ -246,7 +246,6 @@ class AppWindow(QMainWindow):
         self.is_playing = False
         for vr in self._records:
             vr.panel.stop_playback()
-        #self.__update_panels_positions()
 
     def __start_playback(self):
         self.is_playing = True
@@ -306,6 +305,7 @@ class AppWindow(QMainWindow):
 
     def __on_about(self):
         QMessageBox.about(self, 'About', ABOUT_TEXT)
+
 
 if __name__ == '__main__':
     import sys
