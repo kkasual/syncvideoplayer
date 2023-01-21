@@ -66,7 +66,7 @@ class VideoPanelControl(HLayoutWidget):
         self._w_start_editor.setRange(0, 0)
         self._w_start_label = OffsetDisplay(False)
 
-        self._w_button_open_video = ControlButton('...')
+        self._w_button_open_video = ControlButton('⏏')
         self._w_button_dec_ofs_l = ControlButton('<<<')
         self._w_button_dec_ofs_m = ControlButton('<<')
         self._w_button_dec_ofs_s = ControlButton('<')
@@ -90,10 +90,10 @@ class VideoPanelControl(HLayoutWidget):
 
         self._w_button_dec_ofs_l.clicked.connect(self.__fn_change_pos(-500))
         self._w_button_dec_ofs_m.clicked.connect(self.__fn_change_pos(-100))
-        self._w_button_dec_ofs_s.clicked.connect(self.__fn_change_pos(-10))
+        self._w_button_dec_ofs_s.clicked.connect(self.__fn_change_pos(-30))
         self._w_button_inc_ofs_l.clicked.connect(self.__fn_change_pos(500))
         self._w_button_inc_ofs_m.clicked.connect(self.__fn_change_pos(100))
-        self._w_button_inc_ofs_s.clicked.connect(self.__fn_change_pos(10))
+        self._w_button_inc_ofs_s.clicked.connect(self.__fn_change_pos(30))
 
     def __fn_change_pos(self, delta: int):
         def fn():
@@ -166,3 +166,9 @@ class VideoPanel(QWidget):
 
     def has_video(self):
         return self._w_video.has_video()
+
+    def set_text_osd(self, *args, **kwargs):
+        self._w_video.set_text_osd(*args, **kwargs)
+
+    def clear_text_osd(self, *args, **kwargs):
+        self._w_video.clear_text_osd(*args, **kwargs)

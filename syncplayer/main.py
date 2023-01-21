@@ -21,16 +21,22 @@ import PySide6
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtWidgets import QMainWindow, QApplication, QWidget, QVBoxLayout, QFileDialog, QPushButton, QSlider, QLabel
 
-from syncplayer.utils import ms_to_str_full
+from syncplayer.utils import ms_to_str_full, ms_to_str
 from syncplayer.videopanel import VideoPanel
 from syncplayer.widgets import HLayoutWidget, VLayoutWidget
 
 logger = logging.getLogger(__name__)
 
 
+ANCHOR_OVERLAY=1
+
+# more or less one frame
+EDGE_ANCHOR_DELTA=30
+
 class PlayerControl(VLayoutWidget):
     play_clicked = Signal()
     seek = Signal(int)
+    anchor_clicked = Signal(bool)
 
     def __init__(self):
         super().__init__()
@@ -40,7 +46,7 @@ class PlayerControl(VLayoutWidget):
         self._w_line2 = HLayoutWidget()
 
         # basic controls
-        self._w_btn_play = QPushButton('Play/Pause')
+        self._w_btn_play = QPushButton('Play')
         self._w_position = QSlider(Qt.Orientation.Horizontal)
         self._w_position.setTickPosition(QSlider.TickPosition.TicksAbove)
         self._w_position.setTickInterval(1000)
@@ -51,9 +57,12 @@ class PlayerControl(VLayoutWidget):
         self._w_line1.add_widget(self._w_label_pos)
 
         # advanced controls
-        self._w_btn_set_a = QPushButton('A')
-        self._w_btn_set_b = QPushButton('B')
+        self._w_btn_set_a = QPushButton('A ⇥')
+        self._w_btn_set_a.setCheckable(True)
+        self._w_btn_set_b = QPushButton('⇤ B')
+        self._w_btn_set_b.setCheckable(True)
         self._w_btn_set_anchor = QPushButton('⚓')
+        self._w_btn_set_anchor.setCheckable(True)
 
         self._w_line2.add_widget(self._w_btn_set_anchor)
         self._w_line2.add_spacer()
@@ -65,6 +74,7 @@ class PlayerControl(VLayoutWidget):
 
         self._w_btn_play.clicked.connect(self.play_clicked)
         self._w_position.valueChanged.connect(self.__on_slider_moved)
+        self._w_btn_set_anchor.clicked.connect(self.__on_anchor_clicked)
 
         self.__update_label()
 
@@ -89,14 +99,18 @@ class PlayerControl(VLayoutWidget):
     def get_current_pos(self) -> int:
         return self._current_pos
 
+    def __on_anchor_clicked(self):
+        self.anchor_clicked.emit(self._w_btn_set_anchor.isChecked())
 
 @dataclass
 class VideoRecord:
+    index: int
     panel: VideoPanel
     duration: Optional[int]
     offset: int
     fixing_time: int
     position: int
+    anchor: Optional[int]
 
 
 class AppWindow(QMainWindow):
@@ -120,8 +134,8 @@ class AppWindow(QMainWindow):
         self.setCentralWidget(self._w_main_panel)
 
         self._records = [
-            VideoRecord(VideoPanel(), None, 0, 0, 0),
-            VideoRecord(VideoPanel(), None, 0, 0, 0),
+            VideoRecord(0, VideoPanel(), None, 0, 0, 0, None),
+            VideoRecord(1, VideoPanel(), None, 0, 0, 0, None),
         ]
         for vr in self._records:
             vr.panel.clicked_open_video.connect(self.__fn_click_open_video(vr.panel))
@@ -136,6 +150,7 @@ class AppWindow(QMainWindow):
 
         self._w_player_control.play_clicked.connect(self.__on_play_clicked)
         self._w_player_control.seek.connect(self.__on_seek)
+        self._w_player_control.anchor_clicked.connect(self.__on_anchor)
 
         self.__update_control_status()
 
@@ -169,6 +184,8 @@ class AppWindow(QMainWindow):
         def fn(time_ms: int):
             vr.position = time_ms
             vr.panel.update_position(time_ms)
+            if vr.anchor is not None:
+                self.__update_anchor(vr)
         return fn
 
     def __fn_playback_toggled(self, vr: VideoRecord):
@@ -240,6 +257,31 @@ class AppWindow(QMainWindow):
     def _seek(self, time_ms: int):
         for vr in self._records:
             vr.panel.set_position(time_ms + vr.offset)
+
+    def __on_anchor(self, is_anchor_set: bool):
+        if is_anchor_set:
+            self.__set_anchor()
+        else:
+            self.__clear_anchor()
+
+    def __set_anchor(self):
+        for vr in self._records:
+            vr.anchor = vr.position
+            self.__update_anchor(vr)
+
+    def __clear_anchor(self):
+        for vr in self._records:
+            vr.anchor = None
+            vr.panel.clear_text_osd(ANCHOR_OVERLAY)
+
+    def __update_anchor(self, vr: VideoRecord):
+        delta = vr.position - vr.anchor
+        text = ms_to_str(delta, sign_always=True)
+        if vr.index != 0:
+            delta_to_first = delta - (self._records[0].position - self._records[0].anchor)
+            if abs(delta_to_first) > EDGE_ANCHOR_DELTA:
+                text += ' (%s)' % ms_to_str(delta_to_first, sign_always=True)
+        vr.panel.set_text_osd(ANCHOR_OVERLAY, text)
 
 
 if __name__ == '__main__':

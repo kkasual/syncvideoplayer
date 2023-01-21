@@ -121,6 +121,7 @@ class VideoWidget(QWidget):
         if value:
             self.pos_changed.emit(int(float(value) * 1000))
 
+
     def __on_duration_known(self, name, value):
         try:
             duration = int(float(value) * 1000)
@@ -134,3 +135,11 @@ class VideoWidget(QWidget):
 
     def has_video(self) -> bool:
         return self._has_video
+
+    def set_text_osd(self, id: int, text: str):
+        self._player.command('osd_overlay', id=id, data=text, res_x=1920, res_y=1080, z=0,
+                             hidden=False, format='ass-events')
+
+    def clear_text_osd(self, id: int):
+        self._player.command('osd_overlay', id=id, data=None, res_x=1920, res_y=1080, z=0,
+                             hidden=False, format='none')
