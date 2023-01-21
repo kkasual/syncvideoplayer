@@ -19,9 +19,11 @@ from typing import Optional
 
 import PySide6
 from PySide6.QtCore import Qt, Signal
+from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import QMainWindow, QApplication, QWidget, QVBoxLayout, QFileDialog, QPushButton, QSlider, \
     QLabel, QMessageBox
 
+from syncvideoplayer.darkpalette import dark_palette
 from syncvideoplayer.utils import ms_to_str_full, ms_to_str
 from syncvideoplayer.videopanel import VideoPanel
 from syncvideoplayer.widgets import HLayoutWidget, VLayoutWidget
@@ -49,6 +51,7 @@ Built using the following libraries and frameworks:
 <li>Qt6 (https://www.qt.io/product/qt6)</li>
 <li>PySide6 (https://pypi.org/project/PySide6/)</li>
 </ul>
+The logo is generated using Stable Diffusion.
 """
 
 
@@ -176,6 +179,7 @@ class AppWindow(QMainWindow):
 
     def __init__(self, parent: PySide6.QtWidgets.QWidget = None):
         super().__init__(parent)
+        self.setWindowIcon(QIcon("../assets/syncvideoplayer-logo-128.png"));
         self.setWindowTitle('Sync Video Player')
         self.resize(888, 1000)
 
@@ -413,6 +417,8 @@ if __name__ == '__main__':
     logging.getLogger().addHandler(consoleHandler)
 
     app = QApplication(sys.argv)
+    app.setStyle("Fusion")
+    app.setPalette(dark_palette)
 
     main_window = AppWindow()
     main_window.show()
