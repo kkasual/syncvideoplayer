@@ -1,0 +1,16 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+python-mpv = "*"
+pyside6 = "*"
+
+[dev-packages]
+
+[requires]
+python_version = "3.10"
+python_full_version = "3.10.6"
+pywin32 = {"*", sys_platform = "== 'win32'"}
+pywin32-ctypes = {version = "*", sys_platform = "== 'win32'"}

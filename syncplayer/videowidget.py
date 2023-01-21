@@ -1,0 +1,121 @@
+import logging
+import sys
+
+from PySide6.QtCore import Qt, Signal
+from PySide6.QtWidgets import QWidget, QSizePolicy, QVBoxLayout
+
+logger = logging.getLogger(__name__)
+
+class VideoWidget(QWidget):
+    duration = Signal(int)
+    playback_toggled = Signal(bool)
+    pos_changed = Signal(int)
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+
+        self._use_ipc = False
+        self._socket = None
+
+        self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+
+        self._layout = QVBoxLayout()
+        self._layout.setSpacing(0)
+        self._layout.setContentsMargins(0, 0, 0, 0)
+        self.setLayout(self._layout)
+        self.setStyleSheet("background-color:#222;")
+
+        self._w_panel = QWidget()
+        self._w_panel.setAttribute(Qt.WA_DontCreateNativeAncestors)
+        self._w_panel.setAttribute(Qt.WA_NativeWindow)
+        self._layout.addWidget(self._w_panel)
+
+        self._player = None
+        self._has_video = False
+
+    def set_video(self, fname: str):
+        if self._player is None:
+            self._init_player()
+
+        self._player.play(fname)
+        self._has_video = True
+
+    def _get_ipc_fname(self):
+        import random
+        rand_file = "mpv{0}".format(random.randint(0, 2 ** 48))
+        if sys.platform == "win32":
+            return r"\\.\pipe\{0}".format(rand_file)
+        else:
+            return "/tmp/{0}".format(rand_file)
+
+    def __make_socket_client(self, ipc_name: str):
+        if sys.platform == "win32":
+            from syncplayer.winpipe import WinPipeClient
+            return WinPipeClient(ipc_name)
+        else:
+            from syncplayer.unixsocket import UnixSocket
+            return UnixSocket(ipc_name)
+
+    def _init_player(self):
+        from mpv import MPV
+
+        init_args = {
+            'loglevel': 'warn',
+            'audio': False,
+            'merge_files': True,
+            'config': False,
+            'input_default_bindings': False,
+            'start_event_thread': True,
+            'log_handler': print,
+            'keep-open': True,
+        }
+        if self._use_ipc:
+            self.ipc_fname = self._get_ipc_fname()
+            init_args['input_ipc_server'] = self.ipc_fname
+            logger.debug('Using JSON-IPC at %s' % self.ipc_fname)
+
+        logger.info('Creating new MPV player on window_id=%d' % int(self._w_panel.winId()))
+        self._player = MPV(wid=str(int(self._w_panel.winId())), **init_args)
+        self._player['pause'] = True
+
+        self._player.observe_property('pause', self.__on_play_pause)
+        self._player.observe_property('time-pos', self.__on_time_changed)
+        self._player.observe_property('duration', self.__on_duration_known)
+
+        if self._use_ipc:
+            logger.debug('starting MPV socket thread')
+            self.socket = self.__make_socket_client(self.ipc_fname)
+            self.socket.start()
+
+    def stop_playback(self):
+        if self._player is not None:
+            self._player['pause'] = True
+
+    def start_playback(self):
+        if self._player is not None:
+            self._player['pause'] = False
+
+    def get_duration(self) -> int:
+        if self._player is not None:
+            return int(self._player['duration'] * 1000)
+
+    def __on_play_pause(self, name, value):
+        self.playback_toggled.emit(not bool(value))
+
+    def __on_time_changed(self, name, value):
+        if value:
+            self.pos_changed.emit(int(float(value) * 1000))
+
+    def __on_duration_known(self, name, value):
+        try:
+            duration = int(float(value) * 1000)
+            self.duration.emit(duration)
+        except Exception:
+            ...
+
+    def seek(self, time_ms: int):
+        if self._player is not None:
+            self._player.seek(float(time_ms) / 1000.0, reference="absolute", precision="exact")
+
+    def has_video(self) -> bool:
+        return self._has_video
