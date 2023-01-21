@@ -40,7 +40,7 @@ ABOUT_TEXT = r"""
 <br /><br />
 <center>The software is licensed under GPL v3.</center>
 <br />
-Built using the following open-source projects (thanks guys!):
+Built using the following open-source projects:
 <ul>
 <li>libmpv (https://mpv.io/)</li>
 <li>python-mpv (https://github.com/jaseg/python-mpv)</li>
@@ -49,12 +49,14 @@ Built using the following open-source projects (thanks guys!):
 </ul>
 """
 
+
 class PlayerControl(VLayoutWidget):
     SPEED_VALUES = [25, 50, 75, 100, 125]
 
     play_clicked = Signal()
     seek = Signal(int)
     anchor_clicked = Signal(bool)
+    return_to_anchor_clicked = Signal()
     about_clicked = Signal()
     speed_changed = Signal(float)
 
@@ -90,9 +92,12 @@ class PlayerControl(VLayoutWidget):
         self._w_btn_set_b.setCheckable(True)
         self._w_btn_set_anchor = QPushButton('⚓')
         self._w_btn_set_anchor.setCheckable(True)
+        self._w_btn_return_to_anchor = QPushButton('⚓ <-')
+        self._w_btn_return_to_anchor.setEnabled(False)
         self._w_btn_about = QPushButton('About')
 
         self._w_line2.add_widget(self._w_btn_set_anchor)
+        self._w_line2.add_widget(self._w_btn_return_to_anchor)
         self._w_line2.add_widget(self._w_speed)
         self._w_line2.add_widget(self._w_speed_label)
         self._w_line2.add_spacer()
@@ -106,6 +111,7 @@ class PlayerControl(VLayoutWidget):
         self._w_btn_play.clicked.connect(self.play_clicked)
         self._w_position.valueChanged.connect(self.__on_slider_moved)
         self._w_btn_set_anchor.clicked.connect(self.__on_anchor_clicked)
+        self._w_btn_return_to_anchor.clicked.connect(self.return_to_anchor_clicked)
         self._w_btn_about.clicked.connect(self.about_clicked)
         self._w_speed.valueChanged.connect(self.__on_speed_changed)
 
@@ -137,6 +143,7 @@ class PlayerControl(VLayoutWidget):
 
     def __on_anchor_clicked(self):
         self.anchor_clicked.emit(self._w_btn_set_anchor.isChecked())
+        self._w_btn_return_to_anchor.setEnabled(self._w_btn_set_anchor.isChecked())
 
     def __on_speed_changed(self, value):
         speed = self.SPEED_VALUES[value]
@@ -193,6 +200,7 @@ class AppWindow(QMainWindow):
         self._w_player_control.seek.connect(self.__on_seek)
         self._w_player_control.speed_changed.connect(self.__on_speed_changed)
         self._w_player_control.anchor_clicked.connect(self.__on_anchor)
+        self._w_player_control.return_to_anchor_clicked.connect(self.__on_return_to_anchor)
         self._w_player_control.about_clicked.connect(self.__on_about)
 
         self.__update_control_status()
@@ -210,17 +218,20 @@ class AppWindow(QMainWindow):
         for vr in self._records:
             vr.panel.set_controls_enabled(not is_playing)
 
+    def __fix_after_seek_panel(self, vr: VideoRecord, time_ms: int):
+        vr.fixing_time = time_ms
+        self.__lock_offsets()
+        min_fixing = min([x.fixing_time for x in self._records])
+        self._w_player_control.update_position(min_fixing)
+        self.__fixings_invalid = False
+
     def __fn_panel_seek(self, vr: VideoRecord):
         def fn(time_ms: int):
             if self.__fixings_invalid:
                 for vri in self._records:
                     vri.fixing_time = vri.position
                 logger.debug('Fixings for panels: %s' % (', '.join([str(x.fixing_time) for x in self._records])))
-            vr.fixing_time = time_ms
-            self.__lock_offsets()
-            min_fixing = min([x.fixing_time for x in self._records])
-            self._w_player_control.update_position(min_fixing)
-            self.__fixings_invalid = False
+            self.__fix_after_seek_panel(vr, time_ms)
         return fn
 
     def __fn_panel_pos_changed(self, vr: VideoRecord):
@@ -333,6 +344,11 @@ class AppWindow(QMainWindow):
         for vr in self._records:
             vr.panel.set_speed(speed)
 
+    def __on_return_to_anchor(self):
+        for vr in self._records:
+            vr.panel.set_position(vr.anchor)
+            self.__fix_after_seek_panel(vr, vr.anchor)
+
 
 if __name__ == '__main__':
     import sys
@@ -350,5 +366,3 @@ if __name__ == '__main__':
     main_window = AppWindow()
     main_window.show()
     sys.exit(app.exec())
-
-
