@@ -29,9 +29,6 @@ class VideoWidget(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
 
-        self._use_ipc = False
-        self._socket = None
-
         self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
 
         self._layout = QVBoxLayout()
@@ -55,22 +52,6 @@ class VideoWidget(QWidget):
         self._player.play(fname)
         self._has_video = True
 
-    def _get_ipc_fname(self):
-        import random
-        rand_file = "mpv{0}".format(random.randint(0, 2 ** 48))
-        if sys.platform == "win32":
-            return r"\\.\pipe\{0}".format(rand_file)
-        else:
-            return "/tmp/{0}".format(rand_file)
-
-    def __make_socket_client(self, ipc_name: str):
-        if sys.platform == "win32":
-            from syncvideoplayer.winpipe import WinPipeClient
-            return WinPipeClient(ipc_name)
-        else:
-            from syncvideoplayer.unixsocket import UnixSocket
-            return UnixSocket(ipc_name)
-
     def _init_player(self):
         from mpv import MPV
 
@@ -84,11 +65,6 @@ class VideoWidget(QWidget):
             'log_handler': print,
             'keep-open': True,
         }
-        if self._use_ipc:
-            self.ipc_fname = self._get_ipc_fname()
-            init_args['input_ipc_server'] = self.ipc_fname
-            logger.debug('Using JSON-IPC at %s' % self.ipc_fname)
-
         logger.info('Creating new MPV player on window_id=%d' % int(self._w_panel.winId()))
         self._player = MPV(wid=str(int(self._w_panel.winId())), **init_args)
         self._player['pause'] = True
@@ -96,11 +72,6 @@ class VideoWidget(QWidget):
         self._player.observe_property('pause', self.__on_play_pause)
         self._player.observe_property('time-pos', self.__on_time_changed)
         self._player.observe_property('duration', self.__on_duration_known)
-
-        if self._use_ipc:
-            logger.debug('starting MPV socket thread')
-            self.socket = self.__make_socket_client(self.ipc_fname)
-            self.socket.start()
 
     def stop_playback(self):
         if self._player is not None:
