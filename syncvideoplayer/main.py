@@ -14,7 +14,9 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import logging
+import os
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Optional
 
 import PySide6
@@ -38,6 +40,7 @@ EDGE_ANCHOR_DELTA = 30
 
 ABOUT_TEXT = r"""
 <center><b>Sync Video Player</b></center>
+<center>Version 0.1 (internal build, do not distribute)</center>
 <center>(c) 2023, Roman Arsenikhin</center>
 <br />
 <center>Video player that can play two videos side-by-side</center>
@@ -179,7 +182,15 @@ class AppWindow(QMainWindow):
 
     def __init__(self, parent: PySide6.QtWidgets.QWidget = None):
         super().__init__(parent)
-        self.setWindowIcon(QIcon("../assets/syncvideoplayer-logo-128.png"));
+
+        if os.environ.get('SYNCVIDEOPLAYERDEBUG', None) is not None:
+            basedir = Path('.')
+        else:
+            basedir = Path(os.path.dirname(__file__))
+
+        icon_path = basedir / 'assets' / 'syncvideoplayer-logo-128.png'
+
+        self.setWindowIcon(QIcon(str(icon_path)))
         self.setWindowTitle('Sync Video Player')
         self.resize(888, 1000)
 
