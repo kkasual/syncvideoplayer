@@ -84,12 +84,14 @@ class PlayerControl(VLayoutWidget):
         self._w_speed.setTickInterval(1)
         self._w_speed.setRange(0, len(self.SPEED_VALUES)-1)
         self._w_speed.setPageStep(1)
+        self._w_speed.setMaximumWidth(80)
         self._w_speed_label = QLabel()
 
-        self._w_btn_set_a = QPushButton('A ⇥')
-        self._w_btn_set_a.setCheckable(True)
-        self._w_btn_set_b = QPushButton('⇤ B')
-        self._w_btn_set_b.setCheckable(True)
+        # Not yet implemented
+        # self._w_btn_set_a = QPushButton('A ⇥')
+        # self._w_btn_set_a.setCheckable(True)
+        # self._w_btn_set_b = QPushButton('⇤ B')
+        # self._w_btn_set_b.setCheckable(True)
         self._w_btn_set_anchor = QPushButton('⚓')
         self._w_btn_set_anchor.setCheckable(True)
         self._w_btn_return_to_anchor = QPushButton('⚓ <-')
@@ -98,11 +100,12 @@ class PlayerControl(VLayoutWidget):
 
         self._w_line2.add_widget(self._w_btn_set_anchor)
         self._w_line2.add_widget(self._w_btn_return_to_anchor)
+        self._w_line2.add_spacer()
+        # Not yet implemented
+        # self._w_line2.add_widget(self._w_btn_set_a)
+        # self._w_line2.add_widget(self._w_btn_set_b)
         self._w_line2.add_widget(self._w_speed)
         self._w_line2.add_widget(self._w_speed_label)
-        self._w_line2.add_spacer()
-        self._w_line2.add_widget(self._w_btn_set_a)
-        self._w_line2.add_widget(self._w_btn_set_b)
         self._w_line2.add_widget(self._w_btn_about)
 
         self.add_widget(self._w_line1)
@@ -132,6 +135,10 @@ class PlayerControl(VLayoutWidget):
         self._w_label_pos.setText(ms_to_str_full(self._current_pos))
 
     def update_position(self, time_ms: int):
+        """
+        Updates displayed position and internal variable
+        :param time_ms: new position
+        """
         self._w_position.blockSignals(True)
         self._current_pos = time_ms
         self._w_position.setValue(time_ms)
@@ -219,6 +226,16 @@ class AppWindow(QMainWindow):
             vr.panel.set_controls_enabled(not is_playing)
 
     def __fix_after_seek_panel(self, vr: VideoRecord, time_ms: int):
+        """
+        Called after seek was performed for the panel. Updates global position considering current fixings.
+        :param vr: video to update fixing for
+        :param time_ms: fixing time
+        """
+        # if seek is performed after playing the videos, recalculate offsets based on positions of the videos
+        if self.__fixings_invalid:
+            for vri in self._records:
+                vri.fixing_time = vri.position
+            logger.debug('Fixings for panels: %s' % (', '.join([str(x.fixing_time) for x in self._records])))
         vr.fixing_time = time_ms
         self.__lock_offsets()
         min_fixing = min([x.fixing_time for x in self._records])
@@ -227,10 +244,6 @@ class AppWindow(QMainWindow):
 
     def __fn_panel_seek(self, vr: VideoRecord):
         def fn(time_ms: int):
-            if self.__fixings_invalid:
-                for vri in self._records:
-                    vri.fixing_time = vri.position
-                logger.debug('Fixings for panels: %s' % (', '.join([str(x.fixing_time) for x in self._records])))
             self.__fix_after_seek_panel(vr, time_ms)
         return fn
 
@@ -250,6 +263,7 @@ class AppWindow(QMainWindow):
             if not is_playing:
                 self.__stop_playback()
             else:
+                # This means that first panel seek after this will result in fixings recalculations
                 self.__fixings_invalid = True
 
             self.__update_panels_status(is_playing)
@@ -273,6 +287,10 @@ class AppWindow(QMainWindow):
         return fn
 
     def __update_panels_positions(self):
+        """
+        Updates displayed position for each video.
+        Called after performing global seek.
+        """
         for vr in self._records:
             vr.panel.update_position(self._w_player_control.get_current_pos() + vr.offset)
 
@@ -293,6 +311,10 @@ class AppWindow(QMainWindow):
             self.__start_playback()
 
     def __on_pos_changed(self, time_ms: int):
+        """
+        Called when position of the first video changes. Updates internal position
+        :param time_ms: position of the first video
+        """
         # do not update position when not playing
         if self.is_playing:
             self._w_player_control.update_position(time_ms - self._records[0].offset)
@@ -304,11 +326,18 @@ class AppWindow(QMainWindow):
         self.__update_panels_positions()
 
     def __lock_offsets(self):
+        """
+        Calculates video offsets based on their fixings
+        """
         min_fixing = min([vr.fixing_time for vr in self._records])
         for vr in self._records:
             vr.offset = vr.fixing_time - min_fixing
 
     def _seek(self, time_ms: int):
+        """
+        Sets positions of all the videos to the corresponding global position
+        :param time_ms: global position
+        """
         for vr in self._records:
             vr.panel.set_position(time_ms + vr.offset)
 
@@ -319,16 +348,30 @@ class AppWindow(QMainWindow):
             self.__clear_anchor()
 
     def __set_anchor(self):
+        """
+        Called when user presses anchor button.
+        Store current videos positions in variables
+        """
         for vr in self._records:
             vr.anchor = vr.position
             self.__update_anchor(vr)
+            logger.debug('Set anchor positions: [%s]' % (', '.join([str(x.anchor) for x in self._records])))
 
     def __clear_anchor(self):
+        """
+        Called when user turns off anchor.
+        Clears anchors in video records
+        """
         for vr in self._records:
             vr.anchor = None
             vr.panel.clear_text_osd(ANCHOR_OVERLAY)
+            logger.debug('Clear anchor positions: [%s]' % (', '.join([str(x.anchor) for x in self._records])))
 
     def __update_anchor(self, vr: VideoRecord):
+        """
+        Updates OSD for the anchor
+        :param vr: video to update anchor for
+        """
         delta = vr.position - vr.anchor
         text = ms_to_str(delta, sign_always=True)
         if vr.index != 0:
@@ -345,8 +388,14 @@ class AppWindow(QMainWindow):
             vr.panel.set_speed(speed)
 
     def __on_return_to_anchor(self):
+        """
+        Called when user presses "back to anchor" button. Seeks all the videos to their stored anchor positions.
+        """
         for vr in self._records:
             vr.panel.set_position(vr.anchor)
+            vr.panel.update_position(vr.anchor)
+            vr.position = vr.anchor
+            self.__update_anchor(vr)
             self.__fix_after_seek_panel(vr, vr.anchor)
 
 
