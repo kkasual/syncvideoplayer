@@ -19,7 +19,8 @@ from typing import Optional
 
 import PySide6
 from PySide6.QtCore import Qt, Signal
-from PySide6.QtWidgets import QMainWindow, QApplication, QWidget, QVBoxLayout, QFileDialog, QPushButton, QSlider, QLabel
+from PySide6.QtWidgets import QMainWindow, QApplication, QWidget, QVBoxLayout, QFileDialog, QPushButton, QSlider, \
+    QLabel, QMessageBox
 
 from syncplayer.utils import ms_to_str_full, ms_to_str
 from syncplayer.videopanel import VideoPanel
@@ -33,10 +34,26 @@ ANCHOR_OVERLAY=1
 # more or less one frame
 EDGE_ANCHOR_DELTA=30
 
+ABOUT_TEXT=r"""
+<center><b>Sync Player</b></center>
+<center>(c) 2023, Roman Arsenikhin</center>
+<br /><br />
+<center>The software is licensed under GPL v3.</center>
+<br />
+Built using the following open-source projects (thanks guys!):
+<ul>
+<li>libmpv (https://mpv.io/)</li>
+<li>python-mpv (https://github.com/jaseg/python-mpv)</li>
+<li>Qt6 (https://www.qt.io/product/qt6)</li>
+<li>PySide6 (https://pypi.org/project/PySide6/)</li>
+</ul>
+"""
+
 class PlayerControl(VLayoutWidget):
     play_clicked = Signal()
     seek = Signal(int)
     anchor_clicked = Signal(bool)
+    about_clicked = Signal()
 
     def __init__(self):
         super().__init__()
@@ -63,11 +80,13 @@ class PlayerControl(VLayoutWidget):
         self._w_btn_set_b.setCheckable(True)
         self._w_btn_set_anchor = QPushButton('⚓')
         self._w_btn_set_anchor.setCheckable(True)
+        self._w_btn_about = QPushButton('About')
 
         self._w_line2.add_widget(self._w_btn_set_anchor)
         self._w_line2.add_spacer()
         self._w_line2.add_widget(self._w_btn_set_a)
         self._w_line2.add_widget(self._w_btn_set_b)
+        self._w_line2.add_widget(self._w_btn_about)
 
         self.add_widget(self._w_line1)
         self.add_widget(self._w_line2)
@@ -75,6 +94,7 @@ class PlayerControl(VLayoutWidget):
         self._w_btn_play.clicked.connect(self.play_clicked)
         self._w_position.valueChanged.connect(self.__on_slider_moved)
         self._w_btn_set_anchor.clicked.connect(self.__on_anchor_clicked)
+        self._w_btn_about.clicked.connect(self.about_clicked)
 
         self.__update_label()
 
@@ -151,6 +171,7 @@ class AppWindow(QMainWindow):
         self._w_player_control.play_clicked.connect(self.__on_play_clicked)
         self._w_player_control.seek.connect(self.__on_seek)
         self._w_player_control.anchor_clicked.connect(self.__on_anchor)
+        self._w_player_control.about_clicked.connect(self.__on_about)
 
         self.__update_control_status()
 
@@ -283,6 +304,8 @@ class AppWindow(QMainWindow):
                 text += ' (%s)' % ms_to_str(delta_to_first, sign_always=True)
         vr.panel.set_text_osd(ANCHOR_OVERLAY, text)
 
+    def __on_about(self):
+        QMessageBox.about(self, 'About', ABOUT_TEXT)
 
 if __name__ == '__main__':
     import sys
