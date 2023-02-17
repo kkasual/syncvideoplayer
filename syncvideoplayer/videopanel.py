@@ -13,7 +13,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from PySide6.QtCore import Qt, Signal
+import logging
+
+from PySide6.QtCore import Qt, Signal, QMimeData
+from PySide6.QtGui import QDropEvent, QDragEnterEvent
 from PySide6.QtWidgets import QWidget, QGridLayout, QVBoxLayout, QSlider, QSizePolicy, QLineEdit, QPushButton, \
     QSpacerItem
 
@@ -21,6 +24,7 @@ from syncvideoplayer.utils import ms_to_str
 from syncvideoplayer.videowidget import VideoWidget
 from syncvideoplayer.widgets import HLayoutWidget, VLayoutWidget
 
+logger = logging.getLogger(__name__)
 
 class OffsetSlider(QSlider):
     def __init__(self):
@@ -112,6 +116,7 @@ class VideoPanelControl(HLayoutWidget):
 
 class VideoPanel(QWidget):
     clicked_open_video = Signal()
+    file_dropped = Signal(str)
     duration = Signal(int)
     playback_toggled = Signal(bool)
     pos_changed = Signal(int)
@@ -136,6 +141,25 @@ class VideoPanel(QWidget):
         self._w_video.playback_toggled.connect(self.playback_toggled)
         self._w_video.pos_changed.connect(self.pos_changed)
 
+        self.setAcceptDrops(True)
+
+    @staticmethod
+    def __files_list_from_mimedata(mimedata: QMimeData):
+        if mimedata.hasUrls():
+            return [x.toLocalFile() for x in mimedata.urls()]
+        else:
+            return []
+
+    def dragEnterEvent(self, event: QDragEnterEvent):
+        files = self.__files_list_from_mimedata(event.mimeData())
+        if len(files) == 1:
+            event.acceptProposedAction()
+
+    def dropEvent(self, event: QDropEvent):
+        logger.debug('Drop event: %s' % str(event))
+        files = self.__files_list_from_mimedata(event.mimeData())
+        if len(files) == 1:
+            self.file_dropped.emit(files[0])
 
     def __on_duration_known(self, duration):
         self._w_control.set_duration(duration)

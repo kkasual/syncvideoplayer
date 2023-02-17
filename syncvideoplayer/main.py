@@ -211,6 +211,7 @@ class AppWindow(QMainWindow):
         ]
         for vr in self._records:
             vr.panel.clicked_open_video.connect(self.__fn_click_open_video(vr.panel))
+            vr.panel.file_dropped.connect(self.__fn_file_dropped(vr.panel))
             vr.panel.duration.connect(self.__fn_duration_known(vr))
             vr.panel.playback_toggled.connect(self.__fn_playback_toggled(vr))
             vr.panel.seek.connect(self.__fn_panel_seek(vr))
@@ -301,6 +302,13 @@ class AppWindow(QMainWindow):
             if fname:
                 panel.set_video(fname)
                 self.__update_control_status()
+        return fn
+
+    def __fn_file_dropped(self, panel: VideoPanel):
+        def fn(fname: str):
+            self.__stop_playback()
+            panel.set_video(fname)
+            self.__update_control_status()
         return fn
 
     def __update_panels_positions(self):
