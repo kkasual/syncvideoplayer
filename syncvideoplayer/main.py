@@ -166,7 +166,7 @@ class PlayerControl(VLayoutWidget):
         self.speed_changed.emit(speed/100.0)
 
     def set_controls_enabled(self, enabled: bool):
-        for control in [self._w_btn_set_anchor, self._w_btn_return_to_anchor, self._w_position]:
+        for control in [self._w_btn_set_anchor, self._w_position]:
             control.setEnabled(enabled)
 
 @dataclass
