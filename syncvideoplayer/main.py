@@ -165,6 +165,9 @@ class PlayerControl(VLayoutWidget):
         self._w_speed_label.setText('%d%%' % speed)
         self.speed_changed.emit(speed/100.0)
 
+    def set_controls_enabled(self, enabled: bool):
+        for control in [self._w_btn_set_anchor, self._w_btn_return_to_anchor, self._w_position]:
+            control.setEnabled(enabled)
 
 @dataclass
 class VideoRecord:
@@ -242,6 +245,7 @@ class AppWindow(QMainWindow):
     def __update_panels_status(self, is_playing: bool):
         for vr in self._records:
             vr.panel.set_controls_enabled(not is_playing)
+        self._w_player_control.set_controls_enabled(not is_playing)
 
     def __fix_after_seek_panel(self, vr: VideoRecord, time_ms: int):
         """
