@@ -17,14 +17,14 @@ import logging
 
 from PySide6.QtCore import Qt, Signal, QMimeData
 from PySide6.QtGui import QDropEvent, QDragEnterEvent
-from PySide6.QtWidgets import QWidget, QGridLayout, QVBoxLayout, QSlider, QSizePolicy, QLineEdit, QPushButton, \
-    QSpacerItem
+from PySide6.QtWidgets import QWidget, QVBoxLayout, QSlider, QSizePolicy, QLineEdit, QPushButton
 
 from syncvideoplayer.utils import ms_to_str
 from syncvideoplayer.videowidget import VideoWidget
-from syncvideoplayer.widgets import HLayoutWidget, VLayoutWidget
+from syncvideoplayer.widgets import HLayoutWidget
 
 logger = logging.getLogger(__name__)
+
 
 class OffsetSlider(QSlider):
     def __init__(self):

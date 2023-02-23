@@ -14,7 +14,6 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import logging
-import sys
 
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtWidgets import QWidget, QSizePolicy, QVBoxLayout
@@ -91,7 +90,6 @@ class VideoWidget(QWidget):
     def __on_time_changed(self, name, value):
         if value:
             self.pos_changed.emit(int(float(value) * 1000))
-
 
     def __on_duration_known(self, name, value):
         try:
