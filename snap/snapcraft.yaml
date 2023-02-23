@@ -1,0 +1,34 @@
+name: syncvideoplayer
+base: core22
+version: '0.1'
+summary: Video player for playing two video side-by-side
+description: |
+  Video player that can be used to play two video synchronously,
+  set anchor points and measure intervals between events in the videos.
+
+
+grade: devel
+confinement: devmode
+
+parts:
+  executable:
+    plugin: dump
+    source: dist
+    organize:
+      syncvideoplayer: "bin/syncvideoplayer"
+    stage-packages:
+      - libgl1
+      - libegl1
+
+apps:
+  syncvideoplayer:
+    command: "bin/syncvideoplayer"
+    plugs:
+    - desktop
+    - desktop-legacy
+    - wayland
+    - unity7
+    - home
+    - network
+    - opengl
+    - audio-playback

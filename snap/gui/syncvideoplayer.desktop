@@ -1,0 +1,9 @@
+[Desktop Entry]
+Encoding=UTF-8
+Version=0.1
+Type=Application
+Terminal=false
+Exec=syncvideoplayer
+Name=Sync Video Player
+Icon=${SNAP}/meta/gui/syncvideoplayer.png
+Categories=Video;AudioVideo
