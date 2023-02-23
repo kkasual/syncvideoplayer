@@ -178,6 +178,8 @@ class VideoRecord:
     fixing_time: int
     position: int
     anchor: Optional[int]
+    is_playing: bool = False
+    anchor_offset_to_first: Optional[int] = None
 
 
 class AppWindow(QMainWindow):
@@ -209,8 +211,8 @@ class AppWindow(QMainWindow):
         self.setCentralWidget(self._w_main_panel)
 
         self._records = [
-            VideoRecord(0, VideoPanel(), None, 0, 0, 0, None),
-            VideoRecord(1, VideoPanel(), None, 0, 0, 0, None),
+            VideoRecord(0, VideoPanel(), None, 0, 0, 0, None, is_playing=False, anchor_offset_to_first=None),
+            VideoRecord(1, VideoPanel(), None, 0, 0, 0, None, is_playing=False, anchor_offset_to_first=None),
         ]
         for vr in self._records:
             vr.panel.clicked_open_video.connect(self.__fn_click_open_video(vr.panel))
@@ -282,11 +284,17 @@ class AppWindow(QMainWindow):
             logger.debug('Video playback status changed for panel %s, is_playing=%s' % (str(vr), str(is_playing)))
             # if one of the videos stopped playing - stop all the videos
             # we are not afraid of reentrance, because the events are edge triggered
+            prev_any_playing = any(x.is_playing for x in self._records)
+            vr.is_playing = is_playing
+            curr_any_playing = any(x.is_playing for x in self._records)
             if not is_playing:
                 self.__stop_playback()
             else:
                 # This means that first panel seek after this will result in fixings recalculations
                 self.__fixings_invalid = True
+
+            if not is_playing and curr_any_playing != prev_any_playing:
+                logger.debug("All stopped")
 
             self.__update_panels_status(is_playing)
         return fn
@@ -330,6 +338,14 @@ class AppWindow(QMainWindow):
 
     def __start_playback(self):
         self.is_playing = True
+
+        # lock offsets for anchor before playback
+        if self._records[0].anchor is not None:
+            for vr in self._records[1:]:
+                delta = vr.position - vr.anchor
+                delta_to_first = delta - (self._records[0].position - self._records[0].anchor)
+                vr.anchor_offset_to_first = delta_to_first
+
         for vr in self._records:
             vr.panel.start_playback()
 
@@ -404,9 +420,14 @@ class AppWindow(QMainWindow):
         delta = vr.position - vr.anchor
         text = ms_to_str(delta, sign_always=True)
         if vr.index != 0:
-            delta_to_first = delta - (self._records[0].position - self._records[0].anchor)
+            if self.is_playing:
+                delta_to_first = vr.anchor_offset_to_first
+            else:
+                delta_to_first = delta - (self._records[0].position - self._records[0].anchor)
+
             if abs(delta_to_first) > EDGE_ANCHOR_DELTA:
                 text += ' (%s)' % ms_to_str(delta_to_first, sign_always=True)
+
         vr.panel.set_text_osd(ANCHOR_OVERLAY, text)
 
     def __on_about(self):
