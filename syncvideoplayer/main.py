@@ -294,7 +294,9 @@ class AppWindow(QMainWindow):
                 self.__fixings_invalid = True
 
             if not is_playing and curr_any_playing != prev_any_playing:
-                logger.debug("All stopped")
+                ...
+                # do nothing yet, arrange doesn't work as expected yet
+                # self.__arrange_positions()
 
             self.__update_panels_status(is_playing)
         return fn
@@ -429,6 +431,27 @@ class AppWindow(QMainWindow):
                 text += ' (%s)' % ms_to_str(delta_to_first, sign_always=True)
 
         vr.panel.set_text_osd(ANCHOR_OVERLAY, text)
+
+    def __arrange_positions(self):
+        """
+        When playback is stopped and anchor is set, we try to maintain the same offset between videos
+        that was on the start of playback.
+        """
+        if self._records[0].anchor is None:
+            return
+        # position all videos according to their offsets to the first one
+        positions = [x.position for x in self._records]
+        delta_first = self._records[0].position - self._records[0].anchor
+        for idx in range(1, len(self._records)):
+            positions[idx] = self._records[idx].anchor + delta_first + self._records[idx].anchor_offset_to_first
+        # cap positions if they exceed length
+        negative_fixup = 0
+        for idx in range(0, len(self._records)):
+            if positions[idx] > self._records[idx].duration:
+                negative_fixup = max(negative_fixup, positions[idx] - self._records[idx].duration)
+        positions_corrected = [x - negative_fixup for x in positions]
+        for idx, vr in enumerate(self._records):
+            vr.panel.set_position(positions_corrected[idx])
 
     def __on_about(self):
         QMessageBox.about(self, 'About', ABOUT_TEXT)
