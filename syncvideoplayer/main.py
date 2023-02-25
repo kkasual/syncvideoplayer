@@ -21,7 +21,7 @@ from typing import Optional
 
 import PySide6
 from PySide6.QtCore import Qt, Signal
-from PySide6.QtGui import QIcon
+from PySide6.QtGui import QIcon, QShortcut, QKeySequence
 from PySide6.QtWidgets import QMainWindow, QApplication, QWidget, QVBoxLayout, QFileDialog, QPushButton, QSlider, \
     QLabel, QMessageBox
 
@@ -199,6 +199,11 @@ class AppWindow(QMainWindow):
         self.setWindowTitle('Sync Video Player')
         self.resize(888, 1000)
 
+        self._hk_playback = QShortcut(QKeySequence(Qt.Key_Space), self)
+        self._hk_playback.setContext(Qt.ApplicationShortcut)
+        self._hk_playback.activated.connect(self.__on_play_clicked)
+
+        self.__playback_ready = False
         self.__fixings_invalid = True
 
         self._main_panel_layout = QVBoxLayout()
@@ -241,8 +246,9 @@ class AppWindow(QMainWindow):
         self._w_player_control.set_length(min_length)
 
     def __update_control_status(self):
-        all_videos_loaded = all([x.panel.has_video() for x in self._records])
-        self._w_player_control.setEnabled(all_videos_loaded)
+        if not self.__playback_ready:
+            self.__playback_ready = all([x.panel.has_video() for x in self._records])
+        self._w_player_control.setEnabled(self.__playback_ready)
 
     def __update_panels_status(self, is_playing: bool):
         for vr in self._records:
@@ -360,6 +366,9 @@ class AppWindow(QMainWindow):
             vr.panel.start_playback()
 
     def __on_play_clicked(self):
+        if not self.__playback_ready:
+            return
+
         if self.is_playing:
             self.__stop_playback()
         else:
