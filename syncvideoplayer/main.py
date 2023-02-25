@@ -215,8 +215,8 @@ class AppWindow(QMainWindow):
             VideoRecord(1, VideoPanel(), None, 0, 0, 0, None, is_playing=False, anchor_offset_to_first=None),
         ]
         for vr in self._records:
-            vr.panel.clicked_open_video.connect(self.__fn_click_open_video(vr.panel))
-            vr.panel.file_dropped.connect(self.__fn_file_dropped(vr.panel))
+            vr.panel.clicked_open_video.connect(self.__fn_click_open_video(vr))
+            vr.panel.file_dropped.connect(self.__fn_file_dropped(vr))
             vr.panel.duration.connect(self.__fn_duration_known(vr))
             vr.panel.playback_toggled.connect(self.__fn_playback_toggled(vr))
             vr.panel.seek.connect(self.__fn_panel_seek(vr))
@@ -308,22 +308,30 @@ class AppWindow(QMainWindow):
             self.__update_range()
         return fn
 
-    def __fn_click_open_video(self, panel: VideoPanel):
+    def __fn_click_open_video(self, vr: VideoRecord):
         def fn():
             self.__stop_playback()
             fname, _ = QFileDialog.getOpenFileName(None, 'Open video', None,
                                                    "Videos (*.mp4 *.mkv *.avi *.lrv *.MP4 *.AVI *.LRV *.MKV);;All files (*.*)")
             if fname:
-                panel.set_video(fname)
-                self.__update_control_status()
+                self.__open_video(vr, fname)
         return fn
 
-    def __fn_file_dropped(self, panel: VideoPanel):
+    def __fn_file_dropped(self, vr: VideoRecord):
         def fn(fname: str):
             self.__stop_playback()
-            panel.set_video(fname)
-            self.__update_control_status()
+            self.__open_video(vr, fname)
         return fn
+
+    def __open_video(self, vr: VideoRecord, fname: str):
+        self.__clear_anchor()
+        vr.panel.set_video(fname)
+        vr.panel.update_position(0)
+
+        self.__update_control_status()
+        # force update fixings
+        self.__fixings_invalid = True
+        self.__fix_after_seek_panel(vr, 0)
 
     def __update_panels_positions(self):
         """
