@@ -106,12 +106,18 @@ class VideoWidget(QWidget):
         return self._has_video
 
     def set_text_osd(self, id: int, text: str):
+        if self._player is None:
+            return
         self._player.command('osd_overlay', id=id, data=text, res_x=1920, res_y=1080, z=0,
                              hidden=False, format='ass-events')
 
     def clear_text_osd(self, id: int):
+        if self._player is None:
+            return
         self._player.command('osd_overlay', id=id, data=None, res_x=1920, res_y=1080, z=0,
                              hidden=False, format='none')
 
     def set_speed(self, speed: float):
+        if self._player is None:
+            return
         self._player['speed'] = speed
